@@ -29,6 +29,7 @@ public class CommunicationActivity extends ActionBarActivity {
     private Button sendButton;
 
     private ClientNode client;
+    private ServerNode server;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,9 +45,37 @@ public class CommunicationActivity extends ActionBarActivity {
 
         initButtons();
 
-        new ServerNode(LOCAL_PORT, node).run(); /* always up and running server */
+        server = ServerNode.getInstance(LOCAL_PORT);
+        server.setReceiver(node);
 
-        establishConnection(); /* for the first time try to reach the counterpart */
+        client = ClientNode.getInstance(REMOTE_HOST, REMOTE_PORT);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        client.start();
+        server.start();
+    }
+
+    @Override
+    protected void onPause() {
+        client.stop();
+        server.stop();
+        super.onPause();
+    }
+
+    private void printOnChatTextView(final String message) {
+        runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+                chatTextView.setText(chatTextView.getText().toString() +
+                        message + "\n");
+                chatScrollView.fullScroll(ScrollView.FOCUS_DOWN);
+            }
+        });
+
     }
 
     void initButtons() {
@@ -54,68 +83,48 @@ public class CommunicationActivity extends ActionBarActivity {
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+                 /* if you wrote something in the edit text */
+                if (messageEditText.getText() != null &&
+                        messageEditText.getText().length() != 0) {
+
+                    printOnChatTextView("me: " +
+                            messageEditText.getText().toString());
+                } else {
+                    Log.w(TAG, "empty message.");
+                }
+                if (client.isConnected()) {
+                    client.send(messageEditText.getText().toString());
+                } else {
+                    Log.w(TAG, "client is not connected!");
+                }
+
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        /* if you wrote something in the edit text */
-                        if (messageEditText.getText() != null && messageEditText.getText().length() != 0) {
-                            /* show the message in the text view */
-                            chatTextView.setText(chatTextView.getText().toString() +
-                                    "me : " + messageEditText.getText() +
-                                    "\n");
-                            /* send the message */
-                            if (client.isConnected()) {
-                                client.send(messageEditText.getText().toString());
-                            }
-                            /* reset the edit text */
-                            messageEditText.setText("");
-                        } else {
-                            Log.w(TAG, "empty message.");
-                        }
-                        /* scroll down to always show the latest messages */
-                        chatScrollView.fullScroll(ScrollView.FOCUS_DOWN);
+                        /* reset the edit text */
+                        messageEditText.setText("");
                     }
                 });
             }
         });
     }
 
-    private void establishConnection() {
-        client = new ClientNode(REMOTE_HOST, REMOTE_PORT);
-    }
-
     private MessageReceiverInterface node = new MessageReceiverImpl() {
-        private String lmsg;
 
         @Override
         public void receive(String message) {
-            lmsg = message;
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    chatTextView.setText(chatTextView.getText().toString() +
-                            "counterpart: " + lmsg + "\n");
-                    chatScrollView.fullScroll(ScrollView.FOCUS_DOWN);
-                }
-            });
+            printOnChatTextView("counterpart: " + message);
         }
 
         @Override
         public void reestablishConnection() {
-            establishConnection();
+            client.start();
         }
 
         @Override
         public void notifyUser(String message) {
-            lmsg = message;
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    chatTextView.setText(chatTextView.getText().toString() +
-                            lmsg + "\n");
-                    chatScrollView.fullScroll(ScrollView.FOCUS_DOWN);
-                }
-            });
+            printOnChatTextView(message);
         }
     };
 }

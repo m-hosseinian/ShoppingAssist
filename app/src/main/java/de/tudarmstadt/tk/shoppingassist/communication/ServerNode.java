@@ -3,10 +3,14 @@ package de.tudarmstadt.tk.shoppingassist.communication;
 /**
  * Created by Mohammad on 6/27/2015.
  */
+
 import android.util.Log;
 
-import java.io.*;
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.ServerSocket;
+import java.net.Socket;
 
 public class ServerNode {
 
@@ -14,49 +18,86 @@ public class ServerNode {
 
     private int portNumber;
     private MessageReceiverInterface receiver;
+    private static ServerSocket serverSocket;
+    private static Socket clientSocket;
+    private ServerService serverThread;
 
-    public ServerNode(int portNumber, MessageReceiverInterface receiver) {
-        this.portNumber = portNumber;
+    private static ServerNode instance;
+    private boolean running;
+
+
+    public static ServerNode getInstance(int portNumber) {
+        if (instance == null) {
+            instance = new ServerNode(portNumber);
+        }
+        return instance;
+    }
+
+    public void setReceiver(MessageReceiverInterface receiver) {
         this.receiver = receiver;
     }
 
-    public void run() {
-        new Thread() {
-            ServerSocket serverSocket;
+    private ServerNode(int portNumber) {
+        this.portNumber = portNumber;
+        serverThread = new ServerService();
+    }
 
-            @Override
-            public void run() {
-                while (true) {
-                    try {
-                        serverSocket = new ServerSocket(portNumber);
+    private class ServerService extends Thread {
 
-                        receiver.notifyUser("waiting for connection ...");
-                        Socket clientSocket = serverSocket.accept();
-                        receiver.notifyUser("connection established.");
+        @Override
+        public void run() {
+            while (running) {
+                try {
+                    receiver.notifyUser("waiting for connection ...");
 
-                        BufferedReader in = new BufferedReader(
-                                new InputStreamReader(
-                                        clientSocket.getInputStream()));
+                    clientSocket = serverSocket.accept();
+                    receiver.notifyUser("connection established.");
 
-                        String inputLine;
+                    BufferedReader in = new BufferedReader(
+                            new InputStreamReader(
+                                    clientSocket.getInputStream()));
 
-                        while ((inputLine = in.readLine()) != null) {
-                            receiver.receive(inputLine);
-                        }
-
-                    } catch (IOException e) {
-                        System.out.println(e.getMessage());
-                    } finally {
-                        try {
-                            receiver.notifyUser("disconnected!");
-                            serverSocket.close();
-                            receiver.reestablishConnection();
-                        } catch (IOException e) {
-                            Log.e(TAG, e.getMessage());
-                        }
+                    String inputLine;
+                    while ((inputLine = in.readLine()) != null) {
+                        receiver.receive(inputLine);
                     }
+
+                } catch (IOException e) {
+                    receiver.notifyUser("disconnected!");
+                    if (running) {
+                        receiver.reestablishConnection();
+                    }
+                    Log.w(TAG, e.getMessage());
                 }
             }
-        }.start();
+        }
+
+        public void closeSocket() {
+            try {
+                serverSocket.close();
+                serverSocket = null;
+                clientSocket.shutdownInput();
+                clientSocket.close();
+            } catch (IOException e) {
+                Log.w(TAG, e.getMessage());
+            }
+        }
+    }
+
+    public void start() {
+        running = true;
+        try {
+            serverSocket = new ServerSocket(portNumber);
+        } catch (IOException e) {
+            Log.w(TAG, e.getMessage());
+        }
+        if (!serverThread.isAlive())
+            serverThread.start();
+    }
+
+    public void stop() {
+        running = false;
+        serverThread.closeSocket();
+        serverThread = new ServerService();
     }
 }

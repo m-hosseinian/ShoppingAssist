@@ -5,30 +5,37 @@ package de.tudarmstadt.tk.shoppingassist.communication;
  */
 
 import android.os.AsyncTask;
+import android.util.Log;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.Socket;
 
 public class ClientNode {
+
+    private String hostName;
+    private int portNumber;
 
     private Socket clientSocket;
     private PrintWriter out;
     private boolean connected;
 
-    public ClientNode(String hostName, int portNumber) {
+    private static ClientNode instance;
+    private static final String TAG = "ClientNode";
 
-        new ClientAsyncTask(hostName, portNumber).execute();
+    public static ClientNode getInstance(String hostName, int portNumber) {
+        if (instance == null) {
+            instance = new ClientNode(hostName, portNumber);
+        }
+        return instance;
+    }
+
+    private ClientNode(String hostName, int portNumber) {
+        this.hostName = hostName;
+        this.portNumber = portNumber;
     }
 
     private class ClientAsyncTask extends AsyncTask<Void, Void, Void> {
-
-        private String hostName;
-        private int portNumber;
-
-        public ClientAsyncTask(String hostName, int portNumber) {
-            this.hostName = hostName;
-            this.portNumber = portNumber;
-        }
 
         @Override
         protected void onPreExecute() {
@@ -47,7 +54,7 @@ public class ClientNode {
                     try {
                         Thread.sleep(200); // 0.2 seconds
                     } catch (InterruptedException ie) {
-                        ie.printStackTrace();
+                        Log.w(TAG, ie.getMessage());
                     }
                 }
             }
@@ -58,7 +65,6 @@ public class ClientNode {
         protected void onPostExecute(Void result) {
             connected = true;
         }
-
     }
 
     public void send(String message) {
@@ -67,5 +73,19 @@ public class ClientNode {
 
     public boolean isConnected() {
         return connected;
+    }
+
+    public void start() {
+        new ClientAsyncTask().execute();
+    }
+
+    public void stop() {
+        try {
+            clientSocket.close();
+        } catch (IOException e) {
+            Log.w(TAG, e.getMessage());
+        }
+        out.flush();
+        out.close();
     }
 }
