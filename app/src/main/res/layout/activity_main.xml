@@ -13,7 +13,7 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Speech !"
+        android:text="Speak!"
         android:id="@+id/btnVoice"
         android:layout_below="@+id/textView"
         android:layout_alignParentLeft="true"

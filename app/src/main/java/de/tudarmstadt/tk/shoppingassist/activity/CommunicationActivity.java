@@ -20,7 +20,7 @@ public class CommunicationActivity extends ActionBarActivity {
     private static String TAG = "CommunicationActivity";
 
     //private final int LOCAL_PORT = 5000;
-    private final String REMOTE_HOST = "192.168.1.11" ;
+    private final String REMOTE_HOST = "192.168.1." ;
     private final int REMOTE_PORT = 5000;
 
     private ScrollView chatScrollView;

@@ -1,8 +1,11 @@
 package de.tudarmstadt.tk.shoppingassist.activity;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -14,9 +17,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import android.support.v7.app.ActionBarActivity;
 import de.tudarmstadt.tk.shoppingassist.R;
+import de.tudarmstadt.tk.shoppingassist.communication.ClientNode;
+import de.tudarmstadt.tk.shoppingassist.communication.MessageReceiverImpl;
+import de.tudarmstadt.tk.shoppingassist.communication.MessageReceiverInterface;
+import de.tudarmstadt.tk.shoppingassist.communication.ServerNode;
 
 
 /**
@@ -26,6 +35,13 @@ public class VoiceActivity extends ActionBarActivity  {
 
     static final int check = 1111;
     public String REMOTE_IP;
+    public int REMOTE_PORT = 5000;
+    private ClientNode client;
+    private ServerNode server;
+    private HashMap<String,String> DATABASE = new HashMap<String,String>();
+    private List<String> orders = new ArrayList<String>();
+    private TextToSpeech speaker;
+    Vibrator vibrator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,7 +49,32 @@ public class VoiceActivity extends ActionBarActivity  {
         setContentView(R.layout.activity_main);
 
         Intent intent = getIntent();
+        speaker=new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(status != TextToSpeech.ERROR) {
+                    speaker.setLanguage(Locale.UK);
+                }
+            }
+        });
+        vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
+        /**
+         * Initialization of our virtual Database.
+         */
+        DATABASE.put("XXX111","milk");
+        DATABASE.put("XXX112","tomato");
+        DATABASE.put("XXX113","bread");
+        DATABASE.put("XXX114","strawberry");
+        DATABASE.put("XXX115","bacon");
+        DATABASE.put("XXX116","noodle");
+        DATABASE.put("XXX117","toilet paper");
+        DATABASE.put("XXX118","potato");
+
+
         REMOTE_IP = intent.getStringExtra("ip");
+
+        client = ClientNode.getInstance(REMOTE_IP, REMOTE_PORT);
+        client.setReceiver(node);
 
         Button btnVoice = (Button) findViewById(R.id.btnVoice);
         btnVoice.setOnClickListener(new View.OnClickListener() {
@@ -41,60 +82,49 @@ public class VoiceActivity extends ActionBarActivity  {
             public void onClick(View v) {
                 Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
                 i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-                i.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak up!");
+                i.putExtra(RecognizerIntent.EXTRA_PROMPT, "Talk!");
                 startActivityForResult(i, check);
             }
         });
+
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == check && resultCode == RESULT_OK) {
             if (data != null) {
-                //get the text from speech
                 ArrayList<String> result = data
                         .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                //get the text from speech
                 Toast.makeText(getApplicationContext(), result.get(0), Toast.LENGTH_LONG).show();
                 Log.i("Your speech", result.get(0));
                 //Extract order items
-                HashMap<String, String> order = goodsSeperator(result.get(0));
-                //to show result
-                Iterator it = order.entrySet().iterator();
-                while (it.hasNext()) {
-                    Map.Entry pair = (Map.Entry) it.next();
-                    Log.i("Your Order ", pair.getKey() + " = " + pair.getValue());
-                    it.remove(); // avoids a ConcurrentModificationException
-                }
+                String[] elements = result.get(0).split(" ");
+                Log.i("Speech length: ", String.valueOf(elements.length));
+                //compare each word against goods and digits
+                int j;
+                for (int i = 0; i < elements.length; i++)
+                    if(DATABASE.containsKey(elements[i]))
+                        orders.add(elements[i]);
+                if (!orders.isEmpty())
+                    notifyShoppingCart();
+
             }
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    protected HashMap<String, String> goodsSeperator(String input) {
-
-        if (input.length() < 1)
-            return new HashMap<String, String>();
-        //pre defined goods
-        String[] g = {"milk", "rice", "potato", "tomato", "meat", "bread", "cheese", "butter"};
-        ArrayList<String> goods = new ArrayList<String>(Arrays.asList(g));
-        String[] d = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"};
-        ArrayList<String> digits = new ArrayList<String>(Arrays.asList(d));
-
-        HashMap<String, String> orders = new HashMap<String, String>();
-        //convert input string to array of words
-        String[] elements = input.split(" ");
-        Log.i("Speech length: ", String.valueOf(elements.length));
-        //compare each word against goods and digits
-        int j;
-        for (int i = 0; i < elements.length; i++)
-            if (digits.contains(elements[i]))
-                for (j = i; j < elements.length; j++)
-                    if (goods.contains(elements[j])) {
-                        orders.put(elements[j], elements[i]);
-                        Log.i(elements[j], " : " + elements[i]);
-                        i = j; break;
-                    }
-        return orders;
+    private void notifyShoppingCart() {
+        String finalOrder = "";
+        Iterator it = orders.iterator();
+        while (it.hasNext()) {
+            String item = (String) it.next();
+            if (finalOrder.equals(""))
+                finalOrder = item;
+            else
+                finalOrder = finalOrder + ";" + item;
+        }
+        client.send(finalOrder);
     }
 
     @Override
@@ -118,4 +148,44 @@ public class VoiceActivity extends ActionBarActivity  {
 
         return super.onOptionsItemSelected(item);
     }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (client != null)
+            client.start();
+        //server.start();
+    }
+
+    @Override
+    protected void onPause() {
+        if(speaker !=null){
+            speaker.stop();
+            speaker.shutdown();
+        }
+        if (client != null )
+            client.stop();
+        //server.stop();
+        super.onPause();
+    }
+
+    private MessageReceiverInterface node = new MessageReceiverImpl() {
+
+        @Override
+        public void receive(String message) {
+            vibrator.vibrate(300);
+            speaker.speak(message,TextToSpeech.QUEUE_FLUSH,null,null);
+
+        }
+
+        @Override
+        public void reestablishConnection() {
+
+        }
+
+        @Override
+        public void notifyUser(String message) {
+            speaker.speak(message,TextToSpeech.QUEUE_FLUSH,null,null);
+
+        }
+    };
 }
