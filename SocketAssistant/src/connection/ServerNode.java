@@ -7,6 +7,17 @@ public class ServerNode {
 
 	private int portNumber;
 	private MessageReceiver receiver;
+	private boolean isConnected = false;
+	private Socket clientSocket;
+	private PrintWriter out;
+
+	public boolean isConnected() {
+		return isConnected;
+	}
+
+	public void send(String message) {
+		out.println(message);
+	}
 
 	public ServerNode(int portNumber, MessageReceiver receiver) {
 		this.portNumber = portNumber;
@@ -23,13 +34,18 @@ public class ServerNode {
 					try {
 						serverSocket = new ServerSocket(portNumber);
 						System.out.println("waiting for connection ...");
+						isConnected = false;
 
-						Socket clientSocket = serverSocket.accept();
+						clientSocket = serverSocket.accept();
 						System.out.println("connection established.");
+						isConnected = true;
 
 						BufferedReader in = new BufferedReader(
 								new InputStreamReader(
 										clientSocket.getInputStream()));
+
+						out = new PrintWriter(clientSocket.getOutputStream(),
+								true);
 
 						String inputLine;
 
