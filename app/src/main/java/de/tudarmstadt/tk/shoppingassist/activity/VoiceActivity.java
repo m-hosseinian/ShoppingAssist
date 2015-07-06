@@ -25,11 +25,15 @@ import de.tudarmstadt.tk.shoppingassist.R;
 public class VoiceActivity extends ActionBarActivity  {
 
     static final int check = 1111;
+    public String REMOTE_IP;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Intent intent = getIntent();
+        REMOTE_IP = intent.getStringExtra("ip");
 
         Button btnVoice = (Button) findViewById(R.id.btnVoice);
         btnVoice.setOnClickListener(new View.OnClickListener() {
