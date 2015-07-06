@@ -61,14 +61,12 @@ public class VoiceActivity extends ActionBarActivity  {
         /**
          * Initialization of our virtual Database.
          */
-        DATABASE.put("XXX111","milk");
-        DATABASE.put("XXX112","tomato");
-        DATABASE.put("XXX113","bread");
-        DATABASE.put("XXX114","strawberry");
-        DATABASE.put("XXX115","bacon");
-        DATABASE.put("XXX116","noodle");
-        DATABASE.put("XXX117","toilet paper");
-        DATABASE.put("XXX118","potato");
+        DATABASE.put("milk","4D00556F06");
+        DATABASE.put("potato","4D00556F07");
+        DATABASE.put("tomato","4D00556F08");
+        DATABASE.put("bread","4D00556F09");
+        DATABASE.put("bacon","4D00556F10");
+        DATABASE.put("onion","4D00556F11");
 
 
         REMOTE_IP = intent.getStringExtra("ip");
@@ -105,7 +103,7 @@ public class VoiceActivity extends ActionBarActivity  {
                 int j;
                 for (int i = 0; i < elements.length; i++)
                     if(DATABASE.containsKey(elements[i]))
-                        orders.add(elements[i]);
+                        orders.add(DATABASE.get(elements[i]));
                 if (!orders.isEmpty())
                     notifyShoppingCart();
 
