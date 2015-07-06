@@ -7,7 +7,9 @@ package de.tudarmstadt.tk.shoppingassist.communication;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
@@ -18,9 +20,12 @@ public class ClientNode {
 
     private Socket clientSocket;
     private PrintWriter out;
-    private boolean connected;
+    private BufferedReader in;
+    private static boolean connected;
 
+    private MessageReceiverInterface receiver;
     private static ClientNode instance;
+
     private static final String TAG = "ClientNode";
 
     public static ClientNode getInstance(String hostName, int portNumber) {
@@ -35,20 +40,24 @@ public class ClientNode {
         this.portNumber = portNumber;
     }
 
+    public void setReceiver(MessageReceiverInterface receiver) {
+        this.receiver = receiver;
+    }
+
     private class ClientAsyncTask extends AsyncTask<Void, Void, Void> {
 
         @Override
-        protected void onPreExecute() {
-            connected = false;
-        }
-
-        @Override
         protected Void doInBackground(Void... params) {
+            connected = false;
+            receiver.notifyUser("looking for Gadgeteer ...");
             boolean polling = true;
             while (polling) {
                 try {
                     clientSocket = new Socket(hostName, portNumber);
                     out = new PrintWriter(clientSocket.getOutputStream(), true);
+                    in = new BufferedReader(
+                            new InputStreamReader(
+                                    clientSocket.getInputStream()));
                     polling = false;
                 } catch (IOException e) {
                     try {
@@ -58,12 +67,22 @@ public class ClientNode {
                     }
                 }
             }
-            return null;
-        }
 
-        @Override
-        protected void onPostExecute(Void result) {
             connected = true;
+            receiver.notifyUser("connected.");
+            String receivedMessage;
+
+            try {
+                while ((receivedMessage = in.readLine()) != null) {
+                    receiver.receive(receivedMessage);
+                }
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+                stop();
+                start();
+            }
+
+            return null;
         }
     }
 
