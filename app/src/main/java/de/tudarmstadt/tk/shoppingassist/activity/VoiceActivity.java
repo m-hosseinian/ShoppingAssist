@@ -2,6 +2,7 @@ package de.tudarmstadt.tk.shoppingassist.activity;
 
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.speech.RecognizerIntent;
@@ -52,8 +53,11 @@ public class VoiceActivity extends ActionBarActivity  {
         speaker=new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
-                if(status != TextToSpeech.ERROR) {
-                    speaker.setLanguage(Locale.UK);
+                if(status == TextToSpeech.SUCCESS) {
+                    speaker.setLanguage(Locale.US);
+                    speaker.setSpeechRate(0.8f);
+                    AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+                    audioManager.setSpeakerphoneOn(true);
                 }
             }
         });
@@ -156,10 +160,10 @@ public class VoiceActivity extends ActionBarActivity  {
 
     @Override
     protected void onPause() {
-        if(speaker !=null){
+       /* if(speaker !=null){
             speaker.stop();
             speaker.shutdown();
-        }
+        }*/
         if (client != null )
             client.stop();
         //server.stop();
@@ -170,8 +174,14 @@ public class VoiceActivity extends ActionBarActivity  {
 
         @Override
         public void receive(String message) {
-            vibrator.vibrate(300);
-            speaker.speak(message,TextToSpeech.QUEUE_FLUSH,null,null);
+            Iterator iterator = DATABASE.entrySet().iterator();
+            while(iterator.hasNext()) {
+                Map.Entry<String,String> item = (Map.Entry<String, String>) iterator.next();
+                if (item.getValue().equals(message)){
+                    vibrator.vibrate(300);
+                    speaker.speak(item.getKey() + "found", TextToSpeech.QUEUE_FLUSH, null, null);
+                }
+            }
 
         }
 
@@ -182,8 +192,8 @@ public class VoiceActivity extends ActionBarActivity  {
 
         @Override
         public void notifyUser(String message) {
-            speaker.speak(message,TextToSpeech.QUEUE_FLUSH,null,null);
-
+            Log.i("Communication", message);
+            //Toast.makeText(getApplicationContext(),message, Toast.LENGTH_SHORT).show();
         }
     };
 }
