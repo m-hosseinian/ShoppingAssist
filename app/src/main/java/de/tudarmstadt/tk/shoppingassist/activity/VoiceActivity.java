@@ -147,6 +147,11 @@ public class VoiceActivity extends ActionBarActivity  {
         @Override
         public void run() {
             Log.i(TAG, "about to send: " + finalOrder);
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             while (!client.isConnected()){
                 try {
                         Thread.sleep(200);
