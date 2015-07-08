@@ -121,8 +121,10 @@ public class VoiceActivity extends ActionBarActivity  {
                         orders.add(DATABASE.get(elements[i]));
                     }
                 }
-                if (!orders.isEmpty())
+                if (!orders.isEmpty()) {
                     notifyShoppingCart();
+                    orders = new ArrayList<>();
+                }
             }
         }
         super.onActivityResult(requestCode, resultCode, data);
