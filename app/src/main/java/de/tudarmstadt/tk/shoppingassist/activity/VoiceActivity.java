@@ -38,7 +38,7 @@ public class VoiceActivity extends ActionBarActivity  {
     private String finalOrder;
 
     static final int check = 1111;
-    public String REMOTE_IP;
+    public String remoteIp;
     private final int LOCAL_PORT = 8081;
     private final int REMOTE_PORT = 8080;
     private ClientNode client;
@@ -50,7 +50,6 @@ public class VoiceActivity extends ActionBarActivity  {
 
     private Button btnVoice;
     private TextView ordersTextView;
-    private Button sendButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +57,7 @@ public class VoiceActivity extends ActionBarActivity  {
         setContentView(R.layout.activity_main);
 
         Intent intent = getIntent();
-        speaker=new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+        speaker = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
                 if(status == TextToSpeech.SUCCESS) {
@@ -81,20 +80,15 @@ public class VoiceActivity extends ActionBarActivity  {
         DATABASE.put("onion","4D00556F11");
 
 
-        REMOTE_IP = intent.getStringExtra("ip");
+        remoteIp = intent.getStringExtra("ip");
 
         server = ServerNode.getInstance(LOCAL_PORT);
         server.setReceiver(node);
 
-        client = ClientNode.getInstance(REMOTE_IP, REMOTE_PORT);
+        client = ClientNode.getInstance(remoteIp, REMOTE_PORT);
 
         btnVoice = (Button) findViewById(R.id.btnVoice);
         ordersTextView = (TextView) findViewById(R.id.textViewOrders);
-
-        initButtons();
-    }
-
-    void initButtons() {
 
         btnVoice.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -150,13 +144,16 @@ public class VoiceActivity extends ActionBarActivity  {
 
         @Override
         public void run() {
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             Log.i(TAG, "about to send: " + finalOrder);
+            while (!client.isConnected()){
+                try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+            }
             client.send(finalOrder);
+            Log.i(TAG, "sent.");
         }
     }
 
@@ -165,7 +162,6 @@ public class VoiceActivity extends ActionBarActivity  {
         for (String item : orders ) {
             finalOrder = item + ";" + finalOrder;
         }
-        Log.i(TAG, "finalOrder = " + finalOrder);
         new TransmissionThread().start();
     }
 

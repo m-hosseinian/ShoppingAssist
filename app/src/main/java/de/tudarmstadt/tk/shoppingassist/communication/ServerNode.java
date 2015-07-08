@@ -18,8 +18,8 @@ public class ServerNode {
 
     private int portNumber;
     private MessageReceiverInterface receiver;
-    private static ServerSocket serverSocket;
-    private static Socket clientSocket;
+    private ServerSocket serverSocket;
+    private Socket clientSocket;
     private ServerService serverThread;
     private boolean connected;
 

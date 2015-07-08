@@ -21,7 +21,7 @@ public class ClientNode {
     private boolean connected;
 
     private static ClientNode instance;
-    private static final String TAG = "ClientNode";
+    private final String TAG = "ClientNode";
 
     public static ClientNode getInstance(String hostName, int portNumber) {
         if (instance == null) {
