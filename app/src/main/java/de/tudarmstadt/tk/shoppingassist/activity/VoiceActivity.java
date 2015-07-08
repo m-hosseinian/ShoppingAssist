@@ -90,7 +90,6 @@ public class VoiceActivity extends ActionBarActivity  {
 
         btnVoice = (Button) findViewById(R.id.btnVoice);
         ordersTextView = (TextView) findViewById(R.id.textViewOrders);
-        //sendButton = (Button) findViewById(R.id.btnSend);
 
         initButtons();
     }
@@ -106,16 +105,6 @@ public class VoiceActivity extends ActionBarActivity  {
                 startActivityForResult(i, check);
             }
         });
-
-        /*sendButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                client.send(finalOrder);
-                Toast.makeText(getApplicationContext(),
-                        "Items transmitted to SmatrCart."
-                        , Toast.LENGTH_SHORT).show();
-            }
-        });*/
     }
 
     @Override
@@ -216,7 +205,6 @@ public class VoiceActivity extends ActionBarActivity  {
         @Override
         public void notifyUser(String message) {
             Log.i(TAG, "Communication: " + message);
-            //Toast.makeText(getApplicationContext(),message, Toast.LENGTH_SHORT).show();
         }
     };
 }
