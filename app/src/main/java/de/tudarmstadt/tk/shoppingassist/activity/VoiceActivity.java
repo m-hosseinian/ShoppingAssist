@@ -7,21 +7,20 @@ import android.os.Bundle;
 import android.os.Vibrator;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import android.support.v7.app.ActionBarActivity;
+
 import de.tudarmstadt.tk.shoppingassist.R;
 import de.tudarmstadt.tk.shoppingassist.communication.ClientNode;
 import de.tudarmstadt.tk.shoppingassist.communication.MessageReceiverImpl;
@@ -34,15 +33,24 @@ import de.tudarmstadt.tk.shoppingassist.communication.ServerNode;
  */
 public class VoiceActivity extends ActionBarActivity  {
 
+    private static String TAG = "VoiceActivity";
+
+    private String finalOrder;
+
     static final int check = 1111;
     public String REMOTE_IP;
-    public int REMOTE_PORT = 5000;
+    private final int LOCAL_PORT = 8081;
+    private final int REMOTE_PORT = 8080;
     private ClientNode client;
     private ServerNode server;
-    private HashMap<String,String> DATABASE = new HashMap<String,String>();
-    private List<String> orders = new ArrayList<String>();
+    private HashMap<String,String> DATABASE = new HashMap<>();
+    private List<String> orders = new ArrayList<>();
     private TextToSpeech speaker;
     Vibrator vibrator;
+
+    private Button btnVoice;
+    private TextView ordersTextView;
+    private Button sendButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +73,7 @@ public class VoiceActivity extends ActionBarActivity  {
         /**
          * Initialization of our virtual Database.
          */
-        DATABASE.put("milk","4D00556F06");
+        DATABASE.put("milk", "4D00556F06");
         DATABASE.put("potato","4D00556F07");
         DATABASE.put("tomato","4D00556F08");
         DATABASE.put("bread","4D00556F09");
@@ -75,10 +83,20 @@ public class VoiceActivity extends ActionBarActivity  {
 
         REMOTE_IP = intent.getStringExtra("ip");
 
-        client = ClientNode.getInstance(REMOTE_IP, REMOTE_PORT);
-        client.setReceiver(node);
+        server = ServerNode.getInstance(LOCAL_PORT);
+        server.setReceiver(node);
 
-        Button btnVoice = (Button) findViewById(R.id.btnVoice);
+        client = ClientNode.getInstance(REMOTE_IP, REMOTE_PORT);
+
+        btnVoice = (Button) findViewById(R.id.btnVoice);
+        ordersTextView = (TextView) findViewById(R.id.textViewOrders);
+        //sendButton = (Button) findViewById(R.id.btnSend);
+
+        initButtons();
+    }
+
+    void initButtons() {
+
         btnVoice.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -89,6 +107,15 @@ public class VoiceActivity extends ActionBarActivity  {
             }
         });
 
+        /*sendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                client.send(finalOrder);
+                Toast.makeText(getApplicationContext(),
+                        "Items transmitted to SmatrCart."
+                        , Toast.LENGTH_SHORT).show();
+            }
+        });*/
     }
 
     @Override
@@ -104,69 +131,66 @@ public class VoiceActivity extends ActionBarActivity  {
                 String[] elements = result.get(0).split(" ");
                 Log.i("Speech length: ", String.valueOf(elements.length));
                 //compare each word against goods and digits
-                int j;
-                for (int i = 0; i < elements.length; i++)
-                    if(DATABASE.containsKey(elements[i]))
+
+                for (int i = 0; i < elements.length; i++) {
+                    if (DATABASE.containsKey(elements[i])) {
+                        printOnOrdersTextView(elements[i]);
                         orders.add(DATABASE.get(elements[i]));
+                    }
+                }
                 if (!orders.isEmpty())
                     notifyShoppingCart();
-
             }
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
 
+    private void printOnOrdersTextView(final String message) {
+        runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+                ordersTextView.setText(ordersTextView.getText().toString() +
+                        message + "\n");
+
+            }
+        });
+    }
+
+    private class TransmissionThread extends Thread {
+
+        @Override
+        public void run() {
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            Log.i(TAG, "about to send: " + finalOrder);
+            client.send(finalOrder);
+        }
+    }
+
     private void notifyShoppingCart() {
-        String finalOrder = "";
-        Iterator it = orders.iterator();
-        while (it.hasNext()) {
-            String item = (String) it.next();
-            if (finalOrder.equals(""))
-                finalOrder = item;
-            else
-                finalOrder = finalOrder + ";" + item;
+        finalOrder = "";
+        for (String item : orders ) {
+            finalOrder = item + ";" + finalOrder;
         }
-        client.send(finalOrder);
+        Log.i(TAG, "finalOrder = " + finalOrder);
+        new TransmissionThread().start();
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
     @Override
     protected void onResume() {
         super.onResume();
-        if (client != null)
-            client.start();
-        //server.start();
+        client.start();
+        server.start();
     }
 
     @Override
     protected void onPause() {
-       /* if(speaker !=null){
-            speaker.stop();
-            speaker.shutdown();
-        }*/
-        if (client != null )
-            client.stop();
-        //server.stop();
+        client.stop();
+        server.stop();
         super.onPause();
     }
 
@@ -182,17 +206,16 @@ public class VoiceActivity extends ActionBarActivity  {
                     speaker.speak(item.getKey() + "found", TextToSpeech.QUEUE_FLUSH, null, null);
                 }
             }
-
         }
 
         @Override
         public void reestablishConnection() {
-
+            client.start();
         }
 
         @Override
         public void notifyUser(String message) {
-            Log.i("Communication", message);
+            Log.i(TAG, "Communication: " + message);
             //Toast.makeText(getApplicationContext(),message, Toast.LENGTH_SHORT).show();
         }
     };

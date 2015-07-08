@@ -64,6 +64,7 @@ public class ClientNode {
         @Override
         protected void onPostExecute(Void result) {
             connected = true;
+            Log.i(TAG, "client connected.");
         }
     }
 
