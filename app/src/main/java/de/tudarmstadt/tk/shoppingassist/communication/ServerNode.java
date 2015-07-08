@@ -21,6 +21,7 @@ public class ServerNode {
     private static ServerSocket serverSocket;
     private static Socket clientSocket;
     private ServerService serverThread;
+    private boolean connected;
 
     private static ServerNode instance;
     private boolean running;
@@ -48,6 +49,7 @@ public class ServerNode {
         public void run() {
             while (running) {
                 try {
+                    connected = false;
                     receiver.notifyUser("waiting for connection ...");
 
                     clientSocket = serverSocket.accept();
@@ -56,7 +58,7 @@ public class ServerNode {
                     BufferedReader in = new BufferedReader(
                             new InputStreamReader(
                                     clientSocket.getInputStream()));
-
+                    connected = true;
                     String inputLine;
                     while ((inputLine = in.readLine()) != null) {
                         receiver.receive(inputLine);
@@ -76,8 +78,10 @@ public class ServerNode {
             try {
                 serverSocket.close();
                 serverSocket = null;
-                clientSocket.shutdownInput();
-                clientSocket.close();
+                if (connected) {
+                    clientSocket.shutdownInput();
+                    clientSocket.close();
+                }
             } catch (IOException e) {
                 Log.w(TAG, e.getMessage());
             }

@@ -1,5 +1,9 @@
 package de.tudarmstadt.tk.shoppingassist.activity;
 
+/**
+ * Created by Mohammad on 6/27/2015.
+ */
+
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -19,9 +23,9 @@ public class CommunicationActivity extends ActionBarActivity {
 
     private static String TAG = "CommunicationActivity";
 
-    //private final int LOCAL_PORT = 5000;
+    private final int LOCAL_PORT = 8081;
     private final String REMOTE_HOST = "192.168.1.11" ;
-    private final int REMOTE_PORT = 5000;
+    private final int REMOTE_PORT = 8080;
 
     private ScrollView chatScrollView;
     private TextView chatTextView;
@@ -45,24 +49,23 @@ public class CommunicationActivity extends ActionBarActivity {
 
         initButtons();
 
-        /*server = ServerNode.getInstance(LOCAL_PORT);
-        server.setReceiver(node);*/
+        server = ServerNode.getInstance(LOCAL_PORT);
+        server.setReceiver(node);
 
         client = ClientNode.getInstance(REMOTE_HOST, REMOTE_PORT);
-        client.setReceiver(node);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         client.start();
-        //server.start();
+        server.start();
     }
 
     @Override
     protected void onPause() {
         client.stop();
-        //server.stop();
+        server.stop();
         super.onPause();
     }
 
@@ -120,7 +123,7 @@ public class CommunicationActivity extends ActionBarActivity {
 
         @Override
         public void reestablishConnection() {
-
+            client.start();
         }
 
         @Override
@@ -129,5 +132,3 @@ public class CommunicationActivity extends ActionBarActivity {
         }
     };
 }
-
-
