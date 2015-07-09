@@ -195,10 +195,15 @@ public class VoiceActivity extends ActionBarActivity  {
                 Map.Entry<String,String> item = (Map.Entry<String, String>) iterator.next();
                 if (item.getValue().equals(message)){
                     vibrator.vibrate(300);
-                    speaker.speak(item.getKey() + "found", TextToSpeech.QUEUE_FLUSH, null, null);
+                    //if()
+                    //speaker.speak(item.getKey() + "found", TextToSpeech.QUEUE_FLUSH, null, null);
+                    speaker.speak(item.getKey() + " found", TextToSpeech.QUEUE_FLUSH,null);
                 }
             }
         }
+        /*
+
+         */
 
         @Override
         public void reestablishConnection() {
