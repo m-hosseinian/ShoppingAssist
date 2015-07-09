@@ -72,10 +72,10 @@ public class VoiceActivity extends ActionBarActivity  {
         /**
          * Initialization of our virtual Database.
          */
-        DATABASE.put("milk", "4D00556F06");
+        DATABASE.put("milk", "4D00556F06");//real tag
         DATABASE.put("potato","4D00556F07");
         DATABASE.put("tomato","4D00556F08");
-        DATABASE.put("bread","4D00556F09");
+        DATABASE.put("bread","4D0055D81F");//real tag
         DATABASE.put("bacon","4D00556F10");
         DATABASE.put("onion","4D00556F11");
 
