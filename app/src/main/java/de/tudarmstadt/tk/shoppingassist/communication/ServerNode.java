@@ -12,12 +12,20 @@ import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+/**
+ * This class acts as Socket server class. It opens a port and starts listening to it.
+ * This class only receives data from counter part. This mechanism has been implemented
+ * asynchronously using a new Thread. The client that is interested in the received data
+ * should implement MessageReceiver interface register itself using serReceiver method.
+ * This interface provides a receive method that is used by the server to send back the
+ * information to the client.
+ */
 public class ServerNode {
 
     private static String TAG = "ServerNode";
 
     private int portNumber;
-    private MessageReceiverInterface receiver;
+    private MessageReceiver receiver;
     private ServerSocket serverSocket;
     private Socket clientSocket;
     private ServerService serverThread;
@@ -26,7 +34,14 @@ public class ServerNode {
     private static ServerNode instance;
     private boolean running;
 
-
+    /**
+     * Since one server instance should be created in our environment,
+     * Singleton pattern is adopted.
+     *
+     * @param portNumber the port on which we want to start listening
+     * @return ServerNode the handle for further stop/start command
+     * on this object.
+     */
     public static ServerNode getInstance(int portNumber) {
         if (instance == null) {
             instance = new ServerNode(portNumber);
@@ -34,19 +49,28 @@ public class ServerNode {
         return instance;
     }
 
-    public void setReceiver(MessageReceiverInterface receiver) {
-        this.receiver = receiver;
-    }
-
     private ServerNode(int portNumber) {
         this.portNumber = portNumber;
         serverThread = new ServerService();
     }
 
+    /**
+     * Register receiver observer
+     * @param receiver observer object that implements MessageReceiver
+     */
+    public void setReceiver(MessageReceiver receiver) {
+        this.receiver = receiver;
+    }
+
+    /**
+     * Avoids blocking other threads while listening
+     */
     private class ServerService extends Thread {
 
         @Override
         public void run() {
+            /* this flag keeps the thread alive. leave of the counterpart should not
+             * cause server to stop. it lets the server starts listening form the beginning */
             while (running) {
                 try {
                     connected = false;
@@ -61,6 +85,7 @@ public class ServerNode {
                     connected = true;
                     String inputLine;
                     while ((inputLine = in.readLine()) != null) {
+                        /* callback on observer object i.e. client */
                         receiver.receive(inputLine);
                     }
 
@@ -74,6 +99,9 @@ public class ServerNode {
             }
         }
 
+        /**
+         * Stops listening, closes the socket and frees all the resources i.e. port, I/OStream, etc.
+         */
         public void closeSocket() {
             try {
                 serverSocket.close();
@@ -88,6 +116,9 @@ public class ServerNode {
         }
     }
 
+    /**
+     * Creates new socket and runs the server thread that starts listening
+     */
     public void start() {
         running = true;
         try {
@@ -99,6 +130,10 @@ public class ServerNode {
             serverThread.start();
     }
 
+    /**
+     * Causes the server thread to finish its job and terminate.
+     * New Server Thread instance is created for later use i.e server start.
+     */
     public void stop() {
         running = false;
         serverThread.closeSocket();

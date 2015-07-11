@@ -11,6 +11,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+/**
+ * This class acts as Socket client class. It attempts to connect to a given socket address.
+ * This class only sends data to the counterpart. As part of the API it exposes a send method
+ * that is used by the client to send information to the counter part listening on specified
+ * socket.
+ */
 public class ClientNode {
 
     private String hostName;
@@ -23,6 +29,15 @@ public class ClientNode {
     private static ClientNode instance;
     private final String TAG = "ClientNode";
 
+    /**
+     * Since one client instance should be created in our environment,
+     * Singleton pattern is adopted.
+     *
+     * @param hostName counterpart host address
+     * @param portNumber counterpart port number
+     * @return ClientNode the handle for further stop/start command
+     * on this object.
+     */
     public static ClientNode getInstance(String hostName, int portNumber) {
         if (instance == null) {
             instance = new ClientNode(hostName, portNumber);
@@ -35,6 +50,7 @@ public class ClientNode {
         this.portNumber = portNumber;
     }
 
+    /* networking tasks on Android conventionally is done in separate AsyncTask */
     private class ClientAsyncTask extends AsyncTask<Void, Void, Void> {
 
         @Override
@@ -42,8 +58,12 @@ public class ClientNode {
             connected = false;
         }
 
+        /* attempts to connect to counterpart */
         @Override
         protected Void doInBackground(Void... params) {
+            /* this flag keeps the thread alive. absence of the counterpart should not
+             * cause client to stop. it lets the client keeps attempting to connect
+             * until counterpart arrives. */
             boolean polling = true;
             while (polling) {
                 try {
@@ -68,18 +88,31 @@ public class ClientNode {
         }
     }
 
+    /**
+     * Sends data to counterpart.
+     */
     public void send(String message) {
         out.println(message);
     }
 
+    /**
+     * Checks if the socket client is connected to the counterpart.
+     */
     public boolean isConnected() {
         return connected;
     }
 
+    /**
+     * Creates new AsyncTask and runs it to start attempting to connect.
+     */
     public void start() {
         new ClientAsyncTask().execute();
     }
 
+    /**
+     * Closes the connect force flush all the
+     * remainder data on the channel.
+     */
     public void stop() {
         if (connected) {
             try {

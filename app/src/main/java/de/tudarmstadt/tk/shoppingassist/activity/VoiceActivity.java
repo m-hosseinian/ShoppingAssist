@@ -24,7 +24,7 @@ import java.util.Map;
 import de.tudarmstadt.tk.shoppingassist.R;
 import de.tudarmstadt.tk.shoppingassist.communication.ClientNode;
 import de.tudarmstadt.tk.shoppingassist.communication.MessageReceiverImpl;
-import de.tudarmstadt.tk.shoppingassist.communication.MessageReceiverInterface;
+import de.tudarmstadt.tk.shoppingassist.communication.MessageReceiver;
 import de.tudarmstadt.tk.shoppingassist.communication.ServerNode;
 
 
@@ -115,9 +115,10 @@ public class VoiceActivity extends ActionBarActivity  {
                 Log.i("Speech length: ", String.valueOf(elements.length));
                 //compare each word against goods and digits
 
+                clearOrdersTextView(ordersTextView);
                 for (int i = 0; i < elements.length; i++) {
                     if (DATABASE.containsKey(elements[i])) {
-                        printOnOrdersTextView(elements[i]);
+                        printOnOrdersTextView(i + 1 + ". " + elements[i], ordersTextView);
                         orders.add(DATABASE.get(elements[i]));
                     }
                 }
@@ -129,19 +130,38 @@ public class VoiceActivity extends ActionBarActivity  {
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
-
-    private void printOnOrdersTextView(final String message) {
+    /**
+     *  helper method to print line on a TextView
+     */
+    private void printOnOrdersTextView(final String message, final TextView tv) {
         runOnUiThread(new Runnable() {
 
             @Override
             public void run() {
-                ordersTextView.setText(ordersTextView.getText().toString() +
+                tv.setText(tv.getText().toString() +
                         message + "\n");
 
             }
         });
     }
 
+    /**
+     *  helper method to clear a TextView
+     */
+    private void clearOrdersTextView(final TextView tv) {
+        runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+                tv.setText("");
+
+            }
+        });
+    }
+
+    /**
+     * transmission is delayed until the socket client is connected.
+     */
     private class TransmissionThread extends Thread {
 
         @Override
@@ -186,8 +206,16 @@ public class VoiceActivity extends ActionBarActivity  {
         super.onPause();
     }
 
-    private MessageReceiverInterface node = new MessageReceiverImpl() {
+    /**
+     * Observer object which is passed to the Socket Server and provides the interface for
+     * receiving the data.
+     */
+    private MessageReceiver node = new MessageReceiverImpl() {
 
+        /**
+         * data is received
+         * @param message
+         */
         @Override
         public void receive(String message) {
             Iterator iterator = DATABASE.entrySet().iterator();
@@ -201,15 +229,18 @@ public class VoiceActivity extends ActionBarActivity  {
                 }
             }
         }
-        /*
 
-         */
-
+        /* server detect the leave of the counterpart so informs the client to reset its
+         * socket client to start attempting to connect to the counterpart on his arrival. */
         @Override
         public void reestablishConnection() {
             client.start();
         }
 
+        /**
+         * internal message. maybe it is needed to be shown to the user somehow
+         * @param message
+         */
         @Override
         public void notifyUser(String message) {
             Log.i(TAG, "Communication: " + message);
