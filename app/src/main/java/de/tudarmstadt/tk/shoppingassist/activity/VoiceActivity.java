@@ -85,7 +85,7 @@ public class VoiceActivity extends ActionBarActivity  {
         server = ServerNode.getInstance(LOCAL_PORT);
         server.setReceiver(node);
 
-        client = ClientNode.getInstance(remoteIp, REMOTE_PORT);
+        client = new ClientNode(remoteIp, REMOTE_PORT);
 
         btnVoice = (Button) findViewById(R.id.btnVoice);
         ordersTextView = (TextView) findViewById(R.id.textViewOrders);
@@ -230,15 +230,17 @@ public class VoiceActivity extends ActionBarActivity  {
             }
         }
 
-        /* server detect the leave of the counterpart so informs the client to reset its
-         * socket client to start attempting to connect to the counterpart on his arrival. */
+        /**
+         * server detect the leave of the counterpart so informs the client to reset its
+         * socket client to start attempting to connect to the counterpart on his arrival.
+         */
         @Override
         public void reestablishConnection() {
             client.start();
         }
 
         /**
-         * internal message. maybe it is needed to be shown to the user somehow
+         * internal message is received. maybe it is needed to be shown to the user somehow
          * @param message
          */
         @Override

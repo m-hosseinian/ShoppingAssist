@@ -22,30 +22,13 @@ public class ClientNode {
     private String hostName;
     private int portNumber;
 
-    private Socket clientSocket;
+    private Socket clientSocket = null;
     private PrintWriter out;
     private boolean connected;
 
-    private static ClientNode instance;
     private final String TAG = "ClientNode";
 
-    /**
-     * Since one client instance should be created in our environment,
-     * Singleton pattern is adopted.
-     *
-     * @param hostName counterpart host address
-     * @param portNumber counterpart port number
-     * @return ClientNode the handle for further stop/start command
-     * on this object.
-     */
-    public static ClientNode getInstance(String hostName, int portNumber) {
-        if (instance == null) {
-            instance = new ClientNode(hostName, portNumber);
-        }
-        return instance;
-    }
-
-    private ClientNode(String hostName, int portNumber) {
+    public ClientNode(String hostName, int portNumber) {
         this.hostName = hostName;
         this.portNumber = portNumber;
     }
@@ -64,8 +47,9 @@ public class ClientNode {
             /* this flag keeps the thread alive. absence of the counterpart should not
              * cause client to stop. it lets the client keeps attempting to connect
              * until counterpart arrives. */
+            int retry = 2;
             boolean polling = true;
-            while (polling) {
+            while (polling && retry > 0) {
                 try {
                     clientSocket = new Socket(hostName, portNumber);
                     out = new PrintWriter(clientSocket.getOutputStream(), true);
@@ -76,6 +60,8 @@ public class ClientNode {
                     } catch (InterruptedException ie) {
                         Log.w(TAG, ie.getMessage());
                     }
+                    retry--;
+                    Log.w(TAG, "retry = " + retry);
                 }
             }
             return null;
@@ -83,7 +69,8 @@ public class ClientNode {
 
         @Override
         protected void onPostExecute(Void result) {
-            connected = true;
+            if (clientSocket != null)
+                connected = true;
             Log.i(TAG, "client connected.");
         }
     }
@@ -117,6 +104,7 @@ public class ClientNode {
         if (connected) {
             try {
                 clientSocket.close();
+                clientSocket = null;
             } catch (IOException e) {
                 Log.w(TAG, e.getMessage());
             }
