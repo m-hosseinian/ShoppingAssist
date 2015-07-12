@@ -38,6 +38,9 @@ public class StartActivity extends Activity {
         editText = (EditText) findViewById(R.id.editText);
     }
 
+    /**
+     * Check if the entered IP address is correct.
+     */
     private class ConnectionThread extends Thread {
 
         @Override
@@ -47,6 +50,9 @@ public class StartActivity extends Activity {
         }
     }
 
+    /**
+     * displays a ProgressDialog
+     */
     private class ConnectionTask extends AsyncTask<Void, Void, Void> {
 
         private ProgressDialog progressDialog;
@@ -69,7 +75,7 @@ public class StartActivity extends Activity {
         protected Void doInBackground(Void... params) {
 
             try {
-                Thread.sleep(1500);
+                Thread.sleep(800);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
