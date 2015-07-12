@@ -32,7 +32,11 @@ public class StartActivity extends Activity {
 
     }
 
-
+    /**
+     * The app start here and checks the field for a Valid IP address and then passes it to the mainactivity.
+     * passing this activity doesn't mean the ip is correct and we can connect to it.
+     * @param view
+     */
     public void sendMessage(View view) {
         // Go to voice activity
         Log.i("StartActivity","Sending IP to another activity");
