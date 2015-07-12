@@ -39,6 +39,9 @@ public class VoiceActivity extends ActionBarActivity  {
 
     static final int check = 1111;
     public String remoteIp;
+    /**
+     * The ports are hardcoded here but obviously only for the beta version
+     */
     private final int LOCAL_PORT = 8081;
     private final int REMOTE_PORT = 8080;
     private ClientNode client;
@@ -55,7 +58,10 @@ public class VoiceActivity extends ActionBarActivity  {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        /**
+         * We initialize the Text to Speech system here so that we can later read out the information
+         * to the visually challenged user.
+         */
         Intent intent = getIntent();
         speaker = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
             @Override
@@ -80,6 +86,9 @@ public class VoiceActivity extends ActionBarActivity  {
         DATABASE.put("onion","4D00556F11");
 
 
+        /**
+         * We try to connect to the counterpart via TCP Stream and also listen back for his answeres.
+         */
         remoteIp = intent.getStringExtra("ip");
 
         server = ServerNode.getInstance(LOCAL_PORT);
@@ -100,6 +109,15 @@ public class VoiceActivity extends ActionBarActivity  {
             }
         });
     }
+
+    /**
+     * This is where the result from google voice service comes back. We make one huge semicollon separated
+     * String from it and send it directly to the counterpart only if any of the stuff are already recognized
+     * bia RFID tags in our database
+     * @param requestCode
+     * @param resultCode
+     * @param data
+     */
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -213,7 +231,7 @@ public class VoiceActivity extends ActionBarActivity  {
     private MessageReceiver node = new MessageReceiverImpl() {
 
         /**
-         * data is received
+         * data is received from the counterpart and we read it out to the user while vibrating his device
          * @param message
          */
         @Override
