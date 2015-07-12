@@ -2,13 +2,22 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:onClick="sendMessage">
+    android:onClick="sendMessage"
+    android:padding="10dp">
+    <TextView android:text="Enter the IP that is set on Gadgeteer, and press connect. Note that, this mechanism is automated in final version using NFC technology to enable zero-configuration."
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/textView"
+        android:textSize="16dp"
+        android:padding="10dp" />
 
     <EditText
         android:id="@+id/editText"
-        android:layout_width="match_parent"
+        android:layout_width="220dp"
         android:layout_height="wrap_content"
-        android:hint="target IP address">
+        android:hint="target IP address"
+        android:layout_gravity="center"
+        android:textAlignment="center">
 
         <requestFocus />
 
@@ -18,7 +27,8 @@
         android:id="@+id/sendButton"
         android:layout_height="wrap_content"
         android:text="@string/button_send"
-        android:onClick="sendMessage" />
+        android:onClick="sendMessage"
+        android:layout_gravity="center"/>
 
 
 </LinearLayout>
