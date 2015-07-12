@@ -99,7 +99,7 @@ public class StartActivity extends Activity {
 
     /**
      * The app start here and checks the field for a Valid IP address and then passes it to the mainactivity.
-     * passing this activity doesn't mean the ip is correct and we can connect to it.
+     * Before passing the IP to the main Activity it is checked whether it is a valid input ir not.
      * @param view
      */
     public void sendMessage(View view) {
